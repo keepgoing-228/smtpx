@@ -1,5 +1,6 @@
 import os
 import smtplib
+from datetime import datetime
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -96,16 +97,16 @@ class EmailSender:
 if __name__ == "__main__":
     sender = "r10631039@g.ntu.edu.tw"
     recipients = [
-        # "Tim_Wan@asrock.com.tw",
+        "Tim_Wan@asrock.com.tw",
         "keepdling@gmail.com",
     ]
     subject = "ASRTranslator completed"
-    message = "Your attachment is ready and attached to this email."
+    message = f"Your attachment is ready and attached to this email. \n\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
     # Example with IDML attachment
     attachments = [
-        "/home/tim/Documents/X870_Nova_WiFi.idml"
-    ]  # Add your IDML file paths here
+        # "/home/tim/Documents/X870_Nova_WiFi.idml"
+    ]
 
     email_sender = EmailSender()
     email_sender.send_email(
