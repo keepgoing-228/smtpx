@@ -14,6 +14,15 @@ wheels = [
 ]
 
 [[package]]
+name = "ntlm-auth"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/a5/ab45529cc1860a1cb05129b438b189af971928d9c9c9d1990b549a6707f9/ntlm-auth-1.5.0.tar.gz", hash = "sha256:c9667d361dc09f6b3750283d503c689070ff7d89f2f6ff0d38088d5436ff8543", size = 28872, upload_time = "2020-06-16T06:26:34.051Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ff/84/97c550164b54942b0e908c31ef09d9469f3ba4cd7332a671e2125732f63b/ntlm_auth-1.5.0-py2.py3-none-any.whl", hash = "sha256:f1527c581dbf149349134fc2d789d50af2a400e193206956fa0ab456ccc5a8ba", size = 29980, upload_time = "2020-06-16T06:26:31.911Z" },
+]
+
+[[package]]
 name = "python-dotenv"
 version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -28,7 +37,11 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "dotenv" },
+    { name = "ntlm-auth" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dotenv", specifier = ">=0.9.9" }]
+requires-dist = [
+    { name = "dotenv", specifier = ">=0.9.9" },
+    { name = "ntlm-auth", specifier = ">=1.5.0" },
+]
