@@ -16,7 +16,13 @@ class EmailSender:
         self.smtp_port = smtp_port
 
     def send_email(
-        self, sender, recipients, subject, message, password=None, attachments=None
+        self,
+        sender: str,
+        recipients: list[str],
+        subject: str,
+        message: str,
+        password: str | None = None,
+        attachments: list[str] | None = None,
     ):
         """
         Send an email using SMTP
@@ -93,8 +99,8 @@ if __name__ == "__main__":
         # "Tim_Wan@asrock.com.tw",
         "keepdling@gmail.com",
     ]
-    subject = "Test Email"
-    message = "This is a test email"
+    subject = "ASRTranslator completed"
+    message = "Your attachment is ready and attached to this email."
 
     # Example with IDML attachment
     attachments = [
