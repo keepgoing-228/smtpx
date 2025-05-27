@@ -2,7 +2,7 @@
     "sender": "Tim_Wan@asrock.com.tw",
     "password": "asrock#123",
     "smtp_server": "mail.asrock.com.tw",
-    "domain": "asrock",
+    "domain": "",
     "smtp_port": 587,
     "recipients": [
         "Tim_Wan@asrock.com.tw",
