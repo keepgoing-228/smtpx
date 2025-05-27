@@ -1,0 +1,16 @@
+{
+    "sender": "Tim_Wan@asrock.com.tw",
+    "password": "asrock#123",
+    "smtp_server": "mail.asrock.com.tw",
+    "smtp_port": 587,
+    "recipients": [
+        "Tim_Wan@asrock.com.tw",
+        "keepdling@gmail.com"
+    ],
+    "subject": "ASRTranslator completed",
+    "message": "Your attachment is ready and attached to this email.",
+    "attachments": [
+    ],
+    "use_ntlm": true,
+    "include_timestamp": true
+}
