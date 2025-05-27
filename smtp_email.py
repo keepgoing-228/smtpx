@@ -21,7 +21,12 @@ class EmailSender:
         self.smtp_port = smtp_port
 
     def _ntlm_auth(
-        self, smtp: smtplib.SMTP, username: str, password: str, domain: str
+        self,
+        smtp: smtplib.SMTP,
+        username: str,
+        password: str,
+        domain: str,
+        ntlm_compatibility: int = 3,
     ) -> bool:
         """
         Perform NTLM authentication manually
@@ -29,8 +34,9 @@ class EmailSender:
         try:
             # Create NTLM context
             ntlm_context = NtlmContext(
-                username, password, domain, None, ntlm_compatibility=3
+                username, password, domain, None, ntlm_compatibility=ntlm_compatibility
             )
+            print(f"NTLM context: {ntlm_context}")
 
             # Send AUTH NTLM command
             smtp.docmd("AUTH", "NTLM")
@@ -75,6 +81,7 @@ class EmailSender:
         password: str | None = None,
         attachments: list[str] | None = None,
         use_ntlm: bool = True,
+        ntlm_compatibility: int = 3,
     ) -> bool:
         """
         Send an email using SMTP
@@ -135,7 +142,13 @@ class EmailSender:
                 smtp.ehlo()
                 if use_ntlm:
                     # Use NTLM authentication
-                    if not self._ntlm_auth(smtp, sender, password, domain):
+                    if not self._ntlm_auth(
+                        smtp,
+                        sender,
+                        password,
+                        domain,
+                        ntlm_compatibility=ntlm_compatibility,
+                    ):
                         return False
                 else:
                     smtp.login(sender, password)
@@ -198,6 +211,7 @@ class EmailSender:
         message = config.get("message", "")
         attachments = config.get("attachments", [])
         use_ntlm = config.get("use_ntlm", True)
+        ntlm_compatibility = config.get("ntlm_compatibility", 3)
         include_timestamp = config.get("include_timestamp", False)
 
         # Validate required fields
@@ -223,6 +237,7 @@ class EmailSender:
             password=password,
             attachments=attachments,
             use_ntlm=use_ntlm,
+            ntlm_compatibility=ntlm_compatibility,
         )
 
 

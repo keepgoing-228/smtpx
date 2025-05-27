@@ -3,6 +3,7 @@
     "password": "asrock#123",
     "smtp_server": "mail.asrock.com.tw",
     "domain": "asrock",
+    "ntlm_compatibility": 3,
     "smtp_port": 587,
     "recipients": [
         "Tim_Wan@asrock.com.tw",
