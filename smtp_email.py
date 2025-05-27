@@ -20,14 +20,16 @@ class EmailSender:
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
 
-    def _ntlm_auth(self, smtp: smtplib.SMTP, username: str, password: str) -> bool:
+    def _ntlm_auth(
+        self, smtp: smtplib.SMTP, username: str, password: str, domain: str
+    ) -> bool:
         """
         Perform NTLM authentication manually
         """
         try:
             # Create NTLM context
             ntlm_context = NtlmContext(
-                username, password, None, None, ntlm_compatibility=3
+                username, password, domain, None, ntlm_compatibility=3
             )
 
             # Send AUTH NTLM command
@@ -69,6 +71,7 @@ class EmailSender:
         recipients: list[str],
         subject: str,
         message: str,
+        domain: str,
         password: str | None = None,
         attachments: list[str] | None = None,
         use_ntlm: bool = True,
@@ -132,7 +135,7 @@ class EmailSender:
                 smtp.ehlo()
                 if use_ntlm:
                     # Use NTLM authentication
-                    if not self._ntlm_auth(smtp, sender, password):
+                    if not self._ntlm_auth(smtp, sender, password, domain):
                         return False
                 else:
                     smtp.login(sender, password)
@@ -190,6 +193,7 @@ class EmailSender:
         sender = config.get("sender")
         password = config.get("password")
         recipients = config.get("recipients", [])
+        domain = config.get("domain", "")
         subject = config.get("subject", "")
         message = config.get("message", "")
         attachments = config.get("attachments", [])
@@ -214,6 +218,7 @@ class EmailSender:
             sender=sender,
             recipients=recipients,
             subject=subject,
+            domain=domain,
             message=message,
             password=password,
             attachments=attachments,
