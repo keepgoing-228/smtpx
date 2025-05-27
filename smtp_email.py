@@ -10,7 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import dotenv
-from ntlm_auth.ntlm import NtlmContext
+import spnego
 
 dotenv.load_dotenv()
 
@@ -20,53 +20,38 @@ class EmailSender:
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
 
-    def _ntlm_auth(
-        self,
-        smtp: smtplib.SMTP,
-        username: str,
-        password: str,
-        domain: str,
-        ntlm_compatibility: int = 3,
+    def _ntlm_auth_with_pyspnego(
+        self, smtp: smtplib.SMTP, username: str, password: str, domain: str
     ) -> bool:
-        """
-        Perform NTLM authentication manually
-        """
         try:
-            # Create NTLM context
-            ntlm_context = NtlmContext(
-                username, password, domain, None, ntlm_compatibility=ntlm_compatibility
+            # create NTLM context
+            context = spnego.client(
+                username=f"{domain}\\{username}" if domain else username,
+                password=password,
+                protocol="ntlm",
             )
-            print(f"NTLM context: {ntlm_context}")
 
-            # Send AUTH NTLM command
+            # send AUTH NTLM command
             smtp.docmd("AUTH", "NTLM")
 
-            # Step 1: Send Type 1 message
-            negotiate_message = ntlm_context.step()
-            negotiate_b64 = base64.b64encode(negotiate_message).decode("ascii")
+            # first step: send negotiate message
+            negotiate_token = context.step()
+            negotiate_b64 = base64.b64encode(negotiate_token).decode("ascii")
 
-            # Send negotiate message and get challenge
             code, challenge_b64 = smtp.docmd("", negotiate_b64)
-
             if code != 334:
-                raise Exception(f"NTLM negotiation failed with code {code}")
+                raise Exception(f"NTLM negotiate failed: {code}")
 
-            # Step 2: Process challenge and send authentication
-            challenge_message = base64.b64decode(challenge_b64)
-            authenticate_message = ntlm_context.step(challenge_message)
-            authenticate_b64 = base64.b64encode(authenticate_message).decode("ascii")
+            # second step: process challenge and authenticate
+            challenge_token = base64.b64decode(challenge_b64)
+            auth_token = context.step(challenge_token)
+            auth_b64 = base64.b64encode(auth_token).decode("ascii")
 
-            # Send authentication message
-            code, response = smtp.docmd("", authenticate_b64)
-
+            code, response = smtp.docmd("", auth_b64)
             if code != 235:
-                raise Exception(
-                    f"NTLM authentication failed with code {code}: {response}"
-                )
+                raise Exception(f"NTLM authentication failed: {code}")
 
-            print("NTLM authentication successful")
             return True
-
         except Exception as e:
             print(f"NTLM authentication error: {e}")
             return False
@@ -81,7 +66,6 @@ class EmailSender:
         password: str | None = None,
         attachments: list[str] | None = None,
         use_ntlm: bool = True,
-        ntlm_compatibility: int = 3,
     ) -> bool:
         """
         Send an email using SMTP
@@ -142,12 +126,11 @@ class EmailSender:
                 smtp.ehlo()
                 if use_ntlm:
                     # Use NTLM authentication
-                    if not self._ntlm_auth(
+                    if not self._ntlm_auth_with_pyspnego(
                         smtp,
                         sender,
                         password,
                         domain,
-                        ntlm_compatibility=ntlm_compatibility,
                     ):
                         return False
                 else:
@@ -211,7 +194,6 @@ class EmailSender:
         message = config.get("message", "")
         attachments = config.get("attachments", [])
         use_ntlm = config.get("use_ntlm", True)
-        ntlm_compatibility = config.get("ntlm_compatibility", 3)
         include_timestamp = config.get("include_timestamp", False)
 
         # Validate required fields
@@ -237,7 +219,6 @@ class EmailSender:
             password=password,
             attachments=attachments,
             use_ntlm=use_ntlm,
-            ntlm_compatibility=ntlm_compatibility,
         )
 
 
