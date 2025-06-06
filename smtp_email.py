@@ -58,27 +58,68 @@ class EmailSender:
 
     def send_email(
         self,
-        sender: str,
-        recipients: list[str],
-        subject: str,
-        message: str,
-        domain: str,
+        sender: str | None = None,
+        recipients: list[str] | None = None,
+        subject: str | None = None,
+        message: str | None = None,
+        domain: str | None = None,
         password: str | None = None,
         attachments: list[str] | None = None,
-        use_ntlm: bool = True,
+        use_ntlm: bool = False,
+        include_timestamp: bool = False,
+        config: dict | None = None,
     ) -> bool:
         """
-        Send an email using SMTP
+        Send an email using SMTP. Can use either direct parameters or a config dictionary.
 
         Args:
             sender (str): Sender email address
             recipients (list): List of recipient email addresses
             subject (str): Email subject
             message (str): Email body content
+            domain (str): Domain for NTLM authentication
             password (str, optional): Email password. If None, will use PASSWORD from env
             attachments (list, optional): List of file paths to attach
-            use_ntlm (bool): Whether to use NTLM authentication (default: True)
+            use_ntlm (bool): Whether to use NTLM authentication (default: False)
+            include_timestamp (bool): Whether to include timestamp in the email body (default: False)
+            config (dict, optional): Configuration dictionary that overrides other parameters
         """
+        # If config is provided, override parameters
+        if config:
+            self.smtp_server = config.get("smtp_server", self.smtp_server)
+            self.smtp_port = config.get("smtp_port", self.smtp_port)
+            sender = config.get("sender", sender)
+            recipients = config.get("recipients", recipients)
+            subject = config.get("subject", subject)
+            message = config.get("message", message)
+            domain = config.get("domain", domain)
+            password = config.get("password", password)
+            attachments = config.get("attachments", attachments)
+            use_ntlm = config.get("use_ntlm", use_ntlm)
+
+            # Add timestamp if requested in config
+            if config.get("include_timestamp", False):
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                message += f"\n\nTime: {timestamp}"
+
+        if include_timestamp:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            message += f"\n\nTime: {timestamp}"
+
+        # Validate required fields
+        if not sender:
+            print("Error: sender is required")
+            return False
+        if not recipients:
+            print("Error: recipients list is required")
+            return False
+        if not subject:
+            print("Error: subject is required")
+            return False
+        if not message:
+            print("Error: message is required")
+            return False
+
         # Create a multipart message object
         msg = MIMEMultipart()
 
@@ -139,9 +180,10 @@ class EmailSender:
                 smtp.send_message(msg)
                 return True
             except Exception as e:
+                print(f"Failed to send email: {e}")
                 return False
 
-    def load_config(self, config_path: str = "email_config.json") -> dict | None:
+    def load_config(self, config_path: str = None) -> dict | None:
         """
         Load email configuration from JSON file
 
@@ -152,6 +194,9 @@ class EmailSender:
             dict: Configuration dictionary
         """
         try:
+            if config_path is None:
+                return None
+
             # If running as exe, look for config file in the same directory
             if getattr(sys, "frozen", False):
                 # Running as exe
@@ -173,76 +218,31 @@ class EmailSender:
             print(f"Error loading configuration: {e}")
             return None
 
-    def send_email_from_config(self, config: dict) -> bool:
-        """
-        Send email using configuration from JSON file
-
-        Args:
-            config_path (str): Path to the configuration file
-
-        Returns:
-            bool: True if email sent successfully, False otherwise
-        """
-        # Extract configuration
-        self.smtp_server = config.get("smtp_server")
-        self.smtp_port = config.get("smtp_port")
-        sender = config.get("sender")
-        password = config.get("password")
-        recipients = config.get("recipients", [])
-        domain = config.get("domain", "")
-        subject = config.get("subject", "")
-        message = config.get("message", "")
-        attachments = config.get("attachments", [])
-        use_ntlm = config.get("use_ntlm", True)
-        include_timestamp = config.get("include_timestamp", False)
-
-        # Validate required fields
-        if not sender:
-            print("Error: sender is required in configuration")
-            return False
-        if not recipients:
-            print("Error: recipients list is required in configuration")
-            return False
-
-        # Add timestamp to message if requested
-        if include_timestamp:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            message += f"\n\nTime: {timestamp}"
-
-        # Send email
-        return self.send_email(
-            sender=sender,
-            recipients=recipients,
-            subject=subject,
-            domain=domain,
-            message=message,
-            password=password,
-            attachments=attachments,
-            use_ntlm=use_ntlm,
-        )
-
 
 if __name__ == "__main__":
-    email_password = os.getenv("PASSWORD")
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_sender = EmailSender(smtp_server=smtp_server, smtp_port=smtp_port)
+    email_sender = EmailSender(
+        smtp_server="smtp.gmail.com",  # default, can be overridden by config
+        smtp_port=587,  # default, can be overridden by config
+    )
 
-    # # Send email
-    # success = email_sender.send_email(
-    #     sender="r10631039@g.ntu.edu.tw",
-    #     recipients=["Tim_Wan@asrock.com.tw", "keepdling@gmail.com"],
-    #     subject="ASRTranslator completed",
-    #     message="Your attachment is ready and attached to this email.",
-    #     password=email_password,
-    #     attachments=[],
-    #     use_ntlm=False,
-    #     use_tls=True,
-    # )
+    # Send email with direct parameters
+    success = email_sender.send_email(
+        sender="r10631039@g.ntu.edu.tw",
+        recipients=["Tim_Wan@asrock.com.tw", "keepdling@gmail.com"],
+        subject="ASRTranslator completed",
+        message="Your attachment is ready and attached to this email.",
+        domain="",
+        password=os.getenv("PASSWORD"),
+        attachments=["email_config.json"],
+        use_ntlm=False,
+        include_timestamp=True,
+        config=None,
+    )
 
-    # Send email using configuration file
-    config = email_sender.load_config()
-    success = email_sender.send_email_from_config(config)
+    # # Load config from file
+    # config_json = email_sender.load_config(config_path="email_config.json")
+    # # Send email with config
+    # success = email_sender.send_email(config=config_json)
 
     if success:
         print("Email sent successfully!")
